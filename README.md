@@ -3,7 +3,7 @@ Install python via anaconda
 https://docs.anaconda.com/free/anaconda/install/index.html
 
 ### Installation
-Then clone this repo (or download the zip file).
+Then clone this repo (or download the zip file). Unzip the `data.zip` (it was too large for GitHub).
 
 Once inside the project folder, create a new conda eviroment 
 
