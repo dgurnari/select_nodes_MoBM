@@ -1,0 +1,14 @@
+name: knotsBM
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - networkx
+  - tqdm
+  - jupyter
+  - bokeh
+  - numba
