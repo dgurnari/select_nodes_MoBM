@@ -66,13 +66,20 @@ def read_graph_from_pickle(
     with open(GRAPH_PATH, "rb") as f:
         G = pickle.load(f)
 
+    try: 
+        G.nodes
+    except:
+        G = G.Graph
+        for node in G.nodes:
+            G.nodes[node]['points_covered'] = G.nodes[node]['points covered'] 
+
     MAX_NODE_SIZE = 0
     for node in G.nodes:
         if len(G.nodes[node]["points_covered"]) > MAX_NODE_SIZE:
             MAX_NODE_SIZE = len(G.nodes[node]["points_covered"])
 
     for node in G.nodes:
-        G.nodes[node]["label"] = node
+        G.nodes[node]["label"] = str(node)
 
         G.nodes[node]["size"] = len(G.nodes[node]["points_covered"])
         # rescale the size for display
@@ -115,7 +122,8 @@ def add_coloring(G, coloring_df, add_std=False):
                 .std()
                 .items()
             ):
-                G.nodes[node]["{}_std".format(name)] = std
+                if name in add_std:
+                    G.nodes[node]["{}_std".format(name)] = std
 
 
 def create_colorbar(style, palette, low, high):
@@ -219,11 +227,15 @@ if 'NA' in GRAPH1_PATH:
 
 coloring_df.drop("knot_id", axis=1, inplace=True)
 
-add_coloring(G, coloring_df)
+coloring_df['s_signature_diff'] = np.abs(coloring_df['signature'].abs() -
+                                         coloring_df['s_invariant'].abs())
+
+add_std = ['signature', 's_invariant']
+add_coloring(G, coloring_df, add_std=add_std)
 
 ## compute all colors
 coloring_variables_dict = dict()
-for var in coloring_df.columns:
+for var in list(coloring_df.columns) + ["{}_std".format(name) for name in add_std]:
     coloring_variables_dict[var] = dict()
 
 # manually set each variable palette
@@ -238,8 +250,9 @@ my_red_palette = cm.get_cmap("Reds")
 coloring_variables_dict["number_of_crossings"]["palette"] = my_red_palette
 coloring_variables_dict["number_of_crossings"]["style"] = "continuous"
 
-# coloring_variables_dict["is_alternating"]["palette"] = my_red_palette
-# coloring_variables_dict["is_alternating"]["style"] = "continuous"
+if 'NA' not in GRAPH1_PATH:
+    coloring_variables_dict["is_alternating"]["palette"] = my_red_palette
+    coloring_variables_dict["is_alternating"]["style"] = "continuous"
 
 coloring_variables_dict["s_invariant"]["palette"] = my_palette
 coloring_variables_dict["s_invariant"]["style"] = "discrete"
@@ -249,6 +262,13 @@ coloring_variables_dict["signature"]["style"] = "discrete"
 
 coloring_variables_dict["signature_mod4"]["palette"] = my_red_palette
 coloring_variables_dict["signature_mod4"]["style"] = None
+
+coloring_variables_dict["s_signature_diff"]["palette"] = my_red_palette
+coloring_variables_dict["s_signature_diff"]["style"] = "continuous"
+
+for var in ["{}_std".format(name) for name in add_std]:
+    coloring_variables_dict[var]["palette"] = my_red_palette
+    coloring_variables_dict[var]["style"] = "continuous"
 
 
 for var in coloring_variables_dict:
