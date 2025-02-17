@@ -37,8 +37,7 @@ from bokeh.models import (
     MultiChoice,
     SaveTool,
     WheelZoomTool,
-    Dropdown
-
+    Dropdown,
 )
 
 from bokeh.palettes import linear_palette, Reds256
@@ -66,12 +65,12 @@ def read_graph_from_pickle(
     with open(GRAPH_PATH, "rb") as f:
         G = pickle.load(f)
 
-    try: 
+    try:
         G.nodes
     except:
         G = G.Graph
         for node in G.nodes:
-            G.nodes[node]['points_covered'] = G.nodes[node]['points covered'] 
+            G.nodes[node]["points_covered"] = G.nodes[node]["points covered"]
 
     MAX_NODE_SIZE = 0
     for node in G.nodes:
@@ -118,9 +117,7 @@ def add_coloring(G, coloring_df, add_std=False):
         # option to add the standar deviation on each node
         if add_std:
             for name, std in (
-                coloring_df.loc[G.nodes[node]["points_covered"]]
-                .std()
-                .items()
+                coloring_df.loc[G.nodes[node]["points_covered"]].std().items()
             ):
                 if name in add_std:
                     G.nodes[node]["{}_std".format(name)] = std
@@ -211,26 +208,28 @@ GRAPH1_PATH = sys.argv[1]
 
 # read graph
 # ASSUME NODES ARE NUMBERED FROM 1 TO N
-G = read_graph_from_pickle(GRAPH1_PATH, add_points_covered=True,
-                        MAX_SCALE=20, MIN_SCALE=7)
+G = read_graph_from_pickle(
+    GRAPH1_PATH, add_points_covered=True, MAX_SCALE=20, MIN_SCALE=7
+)
 
-print('{} nodes loaded'.format(len(G.nodes)))
+print("{} nodes loaded".format(len(G.nodes)))
 
 # reading coloring df
 print("reading coloring df")
 coloring_df = pd.read_csv("data/coloring_df.csv")
 
-if 'NA' in GRAPH1_PATH:
+if "NA" in GRAPH1_PATH:
     coloring_df = coloring_df[coloring_df.is_alternating == 0]
     coloring_df.reset_index(inplace=True, drop=True)
     coloring_df.drop("is_alternating", axis=1, inplace=True)
 
 coloring_df.drop("knot_id", axis=1, inplace=True)
 
-coloring_df['s_signature_diff'] = np.abs(coloring_df['signature'].abs() -
-                                         coloring_df['s_invariant'].abs())
+coloring_df["s_signature_diff"] = np.abs(
+    coloring_df["signature"].abs() - coloring_df["s_invariant"].abs()
+)
 
-add_std = ['signature', 's_invariant']
+add_std = ["signature", "s_invariant"]
 add_coloring(G, coloring_df, add_std=add_std)
 
 ## compute all colors
@@ -250,7 +249,7 @@ my_red_palette = cm.get_cmap("Reds")
 coloring_variables_dict["number_of_crossings"]["palette"] = my_red_palette
 coloring_variables_dict["number_of_crossings"]["style"] = "continuous"
 
-if 'NA' not in GRAPH1_PATH:
+if "NA" not in GRAPH1_PATH:
     coloring_variables_dict["is_alternating"]["palette"] = my_red_palette
     coloring_variables_dict["is_alternating"]["style"] = "continuous"
 
@@ -314,7 +313,7 @@ SELECTED_NODES = []
 #  PLOT  #
 ##########
 
-print('rendering graph')
+print("rendering graph")
 
 plot = Plot(
     width=800,
@@ -339,12 +338,22 @@ plot.toolbar.active_scroll = zoom_tool
 
 graph_renderer = from_networkx(
     graph=G,
-    layout_function = nx.spring_layout,
+    layout_function=nx.spring_layout,
     seed=42,
     scale=1,
     center=(0, 0),
     k=10 / np.sqrt(len(G.nodes)),
     iterations=2000,
+)
+
+graph_renderer.node_renderer.glyph.update(
+    size="size rescaled",
+    fill_color="current_color",
+    fill_alpha=0.8,
+)
+
+graph_renderer.edge_renderer.glyph.update(
+    line_color="black", line_alpha=0.8, line_width=1
 )
 
 ## labels
@@ -361,16 +370,6 @@ source_1 = ColumnDataSource(
 )
 labels_1 = LabelSet(
     x="x", y="y", text="node_id", source=source_1, text_color="black", text_alpha=0
-)
-
-# nodes
-graph_renderer.node_renderer.glyph = Circle(
-    size="size rescaled", fill_color="current_color", fill_alpha=0.8
-)
-
-# edges
-graph_renderer.edge_renderer.glyph = MultiLine(
-    line_color="black", line_alpha=0.8, line_width=1
 )
 
 plot.renderers.append(graph_renderer)
@@ -437,8 +436,10 @@ callback = CustomJS(
 menu = [(var.replace("_", " "), var + "_color") for var in coloring_variables_dict]
 
 dropdown = Dropdown(
-    label="Select a coloring function", button_type="default", menu=menu,
-    sizing_mode='stretch_width'
+    label="Select a coloring function",
+    button_type="default",
+    menu=menu,
+    sizing_mode="stretch_width",
 )
 dropdown.js_on_event("menu_item_click", callback)
 
@@ -447,7 +448,7 @@ dropdown.js_on_event("menu_item_click", callback)
 ################
 
 save_button = Button(
-    label="SAVE SELECTED", sizing_mode='stretch_width', button_type="success"
+    label="SAVE SELECTED", sizing_mode="stretch_width", button_type="success"
 )
 
 #################
@@ -456,9 +457,10 @@ save_button = Button(
 
 labels_button = Button(
     label="SHOW LABELS",
-    sizing_mode='stretch_width',
+    sizing_mode="stretch_width",
 )
 # button_type="success")
+
 
 def showLabel():
     if labels_button.label == "HIDE LABELS":
@@ -468,6 +470,7 @@ def showLabel():
         labels_button.label = "HIDE LABELS"
         labels_1.text_alpha = 1
 
+
 labels_button.on_click(showLabel)
 
 ###################
@@ -476,7 +479,9 @@ labels_button.on_click(showLabel)
 
 OPTIONS = [n["label"] for _, n in G.nodes(data=True)]
 
-multi_choice = MultiChoice(value=[], options=OPTIONS, sizing_mode='stretch_width', height=50)
+multi_choice = MultiChoice(
+    value=[], options=OPTIONS, sizing_mode="stretch_width", height=50
+)
 # multi_choice.js_on_change("value", CustomJS(code="""
 #     console.log('multi_choice: value=' + this.value, this.toString())
 # """))
@@ -487,11 +492,13 @@ multi_choice = MultiChoice(value=[], options=OPTIONS, sizing_mode='stretch_width
 #     color_nodes(G, SELECTED_NODES)
 #     graph_renderer.node_renderer.data_source.data['color'] = [G.nodes[n]['color'] for n in G.nodes]
 
+
 def save_nodelist():
     print("\nThe selected nodes are: ")
     print(set([n for n in multi_choice.value]))
-    with open('{}_selected_nodes.pkl'.format(GRAPH1_PATH[:-4]), 'wb') as f:
+    with open("{}_selected_nodes.pkl".format(GRAPH1_PATH[:-4]), "wb") as f:
         pickle.dump(list(set([n for n in multi_choice.value])), f)
+
 
 # color_button.on_click(update)
 
@@ -499,18 +506,18 @@ save_button.on_click(save_nodelist)
 
 taptool = plot.select(type=TapTool)
 
+
 def update_node_highlight(event):
     nodes_clicked = graph_renderer.node_renderer.data_source.selected.indices
     multi_choice.value += [G.nodes[n]["label"] for n in nodes_clicked]
 
-    SELECTED_NODES = [
-        n for n in G.nodes if G.nodes[n]["label"] in multi_choice.value
-    ]
+    SELECTED_NODES = [n for n in G.nodes if G.nodes[n]["label"] in multi_choice.value]
 
     color_selected_nodes(G, SELECTED_NODES)
     graph_renderer.node_renderer.data_source.data["current_color"] = [
         G.nodes[n]["current_color"] for n in G.nodes
     ]
+
 
 plot.on_event(Tap, update_node_highlight)
 plot.on_event(SelectionGeometry, update_node_highlight)
@@ -518,8 +525,9 @@ plot.on_event(SelectionGeometry, update_node_highlight)
 ##########
 # LAYOUT #
 ##########
-layout = grid([[dropdown, labels_button, save_button], [multi_choice], [plot]], 
-               sizing_mode="stretch_width"
+layout = grid(
+    [[dropdown, labels_button, save_button], [multi_choice], [plot]],
+    sizing_mode="stretch_width",
 )
 
 # layout = column(row(button, multi_choice),
@@ -528,4 +536,4 @@ layout = grid([[dropdown, labels_button, save_button], [multi_choice], [plot]],
 
 curdoc().add_root(layout)
 
-print('done')
+print("done")
